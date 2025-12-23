@@ -1,0 +1,12 @@
+"gstrike"
+{
+	"base"		"base"
+	"title"		"GStrike"
+	"category"	"pvp"
+	"maps"		"^gm_"
+	"menusystem"	"1"
+
+	"settings"
+	{
+	}
+}
