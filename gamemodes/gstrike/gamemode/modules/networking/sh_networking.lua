@@ -1,22 +1,22 @@
 local maxId = 0
-TTTVars = TTTVars or {}
-local TTTVarById = {}
+PlayerVars = PlayerVars or {}
+local PlayerVarsById = {}
 
-local TTT_ID_BITS = 4 -- 2^4 = 16 TTTVars
-local UNKNOWN_TTTRPVAR = 16 -- Should be equal to 2^TTT_ID_BITS - 1
-GStrike.TTT_ID_BITS = TTT_ID_BITS
+local ID_BITS = 4 -- 2^4 = 16 PlayerVars
+local UNKNOWN_VAR = 16 -- Should be equal to 2^ID_BITS - 1
+GStrike.ID_BITS = ID_BITS
 
-function GStrike.registerTTTVar(name, writeFn, readFn)
+function GStrike.registerVar(name, writeFn, readFn)
 	maxId = maxId + 1
 
-	if maxId >= UNKNOWN_TTTRPVAR then error(string.format("Too many TTTVar registrations! TTTVar '%s' triggered this error", name), 2) end
+	if maxId >= UNKNOWN_VAR then error(string.format("Too many Var registrations! Var '%s' triggered this error", name), 2) end
 
-	TTTVars[name] = {id = maxId, name = name, writeFn = writeFn, readFn = readFn}
-	TTTVarById[maxId] = TTTVars[name]
+	PlayerVars[name] = {id = maxId, name = name, writeFn = writeFn, readFn = readFn}
+	PlayerVarsById[maxId] = PlayerVars[name]
 end
 
 local function writeUnknown(name, value)
-	net.WriteUInt(UNKNOWN_TTTRPVAR, 8)
+	net.WriteUInt(UNKNOWN_VAR, 8)
 	net.WriteString(name)
 	net.WriteType(value)
 end
@@ -25,45 +25,45 @@ local function readUnknown()
 	return net.ReadString(), net.ReadType(net.ReadUInt(8))
 end
 
-function GStrike.writeNetTTTVar(name, value)
-	local TTTVar = TTTVars[name]
-	if not TTTVar then
+function GStrike.writeNetVar(name, value)
+	local Var = PlayerVars[name]
+	if not Var then
 
 		return writeUnknown(name, value)
 	end
 
-	net.WriteUInt(TTTVar.id, TTT_ID_BITS)
-	return TTTVar.writeFn(value)
+	net.WriteUInt(Var.id, ID_BITS)
+	return Var.writeFn(value)
 end
 
-function GStrike.writeNetTTTVarRemoval(name)
-	local TTTVar = TTTVars[name]
-	if not TTTVar then
+function GStrike.writeNetVarRemoval(name)
+	local Var = PlayerVars[name]
+	if not Var then
 
-		net.WriteUInt(UNKNOWN_TTTRPVAR, 8)
+		net.WriteUInt(UNKNOWN_VAR, 8)
 		net.WriteString(name)
 		return
 	end
 
-	net.WriteUInt(TTTVar.id, TTT_ID_BITS)
+	net.WriteUInt(Var.id, ID_BITS)
 end
 
-function GStrike.readNetTTTVar()
-	local TTTVarId = net.ReadUInt(TTT_ID_BITS)
-	local TTTVar = TTTVarById[TTTVarId]
+function GStrike.readNetVar()
+	local VarId = net.ReadUInt(ID_BITS)
+	local Var = PlayerVarsById[VarId]
 
-	if TTTVarId == UNKNOWN_TTTRPVAR then
+	if VarId == UNKNOWN_VAR then
 		local name, value = readUnknown()
 		return name, value
 	end
-	local val = TTTVar.readFn(value)
+	local val = Var.readFn(value)
 
-	return TTTVar.name, val
+	return Var.name, val
 end
 
-function GStrike.readNetTTTVarRemoval()
-	local id = net.ReadUInt(TTT_ID_BITS)
-	return id == UNKNOWN_TTTRPVAR and net.ReadString() or TTTVarById[id].name
+function GStrike.readNetVarRemoval()
+	local id = net.ReadUInt(ID_BITS)
+	return id == UNKNOWN_VAR and net.ReadString() or PlayerVarsById[id].name
 end
 
 function net.WriteSteamID(steamid)

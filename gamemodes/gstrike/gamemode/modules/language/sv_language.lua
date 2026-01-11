@@ -10,11 +10,6 @@ end
 
 function LANGUAGE.NotifyAll(name, msgtype, ...)
 	if not LANGUAGE.StringExists(name) then ErrorNoHalt("Language string does not exist: " .. name) return end
-	local players = {}
-	for k,v in pairs(player.GetAll()) do
-		if !v:IsInEvent() then table.insert(players,v) end
-	end
-
 	net.Start("LangString")
 		net.WriteUInt(LANGUAGE.CurrentLangauge[name].networkid, LANGUAGE.NetworkBitSize)
 		net.WriteUInt(msgtype, 3)
@@ -22,7 +17,7 @@ function LANGUAGE.NotifyAll(name, msgtype, ...)
 		for k,v in pairs(LANGUAGE.CurrentLangauge[name].arguments) do
 			v[1](args[k])
 		end
-	net.Send(players)
+	net.Broadcast()
 end
 
 function LANGUAGE.Notify(ply, name, msgtype, ...)
@@ -51,11 +46,6 @@ end
 
 function LANGUAGE.PrintMessageAll(name, msgtype, ...)
 	if not LANGUAGE.StringExists(name) then ErrorNoHalt("Language string does not exist: " .. name) return end
-	local players = {}
-	for k,v in pairs(player.GetAll()) do
-		if !v:IsInEvent() then table.insert(players,v) end
-	end
-
 	net.Start("PrintMessage")
 		net.WriteUInt(LANGUAGE.CurrentLangauge[name].networkid, LANGUAGE.NetworkBitSize)
 		net.WriteUInt(msgtype, 3)
@@ -63,7 +53,7 @@ function LANGUAGE.PrintMessageAll(name, msgtype, ...)
 		for k,v in pairs(LANGUAGE.CurrentLangauge[name].arguments) do
 			v[1](args[k])
 		end
-	net.Send(players)
+	net.Broadcast()
 end
 
 function LANGUAGE.LiquidChat(ply, name, msgtype, ...)

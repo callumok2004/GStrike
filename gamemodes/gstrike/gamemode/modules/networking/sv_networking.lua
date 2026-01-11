@@ -4,56 +4,50 @@ util.AddNetworkString("GStrike.InitializeVars")
 util.AddNetworkString("GStrike.PlayerVar")
 util.AddNetworkString("GStrike.PlayerVarRemoval")
 
-function meta:removeTTTVar(var, target)
-	hook.Call("GStrike.VarChanged", nil, self, var, (self.TTTVars and self.TTTVars[var]) or nil, nil)
+function meta:removeVar(var, target)
+	hook.Call("GStrike.VarChanged", nil, self, var, (self.GStrikeVars and self.GStrikeVars[var]) or nil, nil)
 	target = target or player.GetAll()
-	self.TTTVars = self.TTTVars or {}
-	self.TTTVars[var] = nil
+	self.GStrikeVars = self.GStrikeVars or {}
+	self.GStrikeVars[var] = nil
 
 	net.Start("GStrike.PlayerVarRemoval")
 		net.WriteUInt(self:UserID(), 16)
-		GStrike.writeNetTTTVarRemoval(var)
+		GStrike.writeNetVarRemoval(var)
 	net.Send(target)
 end
 
-function meta:setTTTVar(var, value, target)
+function meta:setVar(var, value, target)
 	if not IsValid(self) then return end
-	self.targettedTTTVars = self.targettedTTTVars or {}
+	self.targettedGStrikeVars = self.targettedGStrikeVars or {}
 
 	if target then
-		self.targettedTTTVars[var] = true
+		self.targettedGStrikeVars[var] = true
 	else
-		self.targettedTTTVars[var] = nil
+		self.targettedGStrikeVars[var] = nil
 	end
 
 	target = target or player.GetAll()
 
-	-- MsgC(Color(0, 255, 0), "Setting TTT var ", var, " to ", value, " for ", self, "\n")
-	-- MsgC(Color(0, 255, 0), "Targets: ", target, "\n")
-	-- for _, ply in pairs(target) do
-	-- 	MsgC(Color(0, 255, 0), "  ", ply, "\n")
-	-- end
+	if value == nil then return self:removeVar(var, target) end
+	hook.Call("GStrike.VarChanged", nil, self, var, (self.GStrikeVars and self.GStrikeVars[var]) or nil, value)
 
-	if value == nil then return self:removeTTTVar(var, target) end
-	hook.Call("GStrike.VarChanged", nil, self, var, (self.TTTVars and self.TTTVars[var]) or nil, value)
-
-	self.TTTVars = self.TTTVars or {}
-	self.TTTVars[var] = value
+	self.GStrikeVars = self.GStrikeVars or {}
+	self.GStrikeVars[var] = value
 
 	net.Start("GStrike.PlayerVar")
 		net.WriteUInt(self:UserID(), 16)
-		GStrike.writeNetTTTVar(var, value)
+		GStrike.writeNetVar(var, value)
 	net.Send(target)
 end
 
-function meta:setSelfTTTVar(var, value)
-	self.privateTTTVars = self.privateTTTVars or {}
-	self.privateTTTVars[var] = true
-	self:setTTTVar(var, value, self)
+function meta:setSelfVar(var, value)
+	self.privateGStrikeVars = self.privateGStrikeVars or {}
+	self.privateGStrikeVars[var] = true
+	self:setVar(var, value, self)
 end
 
-function meta:getTTTVar(var, fallback)
-	local vars = self.TTTVars
+function meta:getVar(var, fallback)
+	local vars = self.GStrikeVars
 	if vars == nil then return fallback end
 
 	local results = vars[var]
@@ -62,37 +56,36 @@ function meta:getTTTVar(var, fallback)
 	return results
 end
 
-function meta:sendTTTVars()
+function meta:sendVars()
 	if self:EntIndex() == 0 then return end
 
 	local plys = player.GetAll()
 
 	net.Start("GStrike.InitializeVars")
 		net.WriteUInt(#plys, 8)
-		for _, target in pairs(plys) do
+		for _, target in ipairs(plys) do
 			net.WriteUInt(target:UserID(), 16)
 
-			local TTTVars = {}
-			for var, value in pairs(target.TTTVars or {}) do
+			local GStrikeVars = {}
+			for var, value in pairs(target.GStrikeVars or {}) do
 				if self ~= target then
-					if (target.privateTTTVars or {})[var] then continue end
-					if (target.targettedTTTVars or {})[var] then continue end
+					if (target.privateGStrikeVars or {})[var] then continue end
+					if (target.targettedGStrikeVars or {})[var] then continue end
 				end
-				table.insert(TTTVars, var)
+				table.insert(GStrikeVars, var)
 			end
 
-			net.WriteUInt(#TTTVars, GStrike.TTT_ID_BITS + 2)
-			for i = 1, #TTTVars, 1 do
-				GStrike.writeNetTTTVar(TTTVars[i], target.TTTVars[TTTVars[i]])
+			net.WriteUInt(#GStrikeVars, GStrike.ID_BITS + 2)
+			for i = 1, #GStrikeVars, 1 do
+				GStrike.writeNetVar(GStrikeVars[i], target.GStrikeVars[GStrikeVars[i]])
 			end
 		end
 	net.Send(self)
 end
 
-concommand.Add("_sendTTTvars", function(ply)
-	ply.TTTVars = ply.TTTVars or {}
-
-	if ply.TTTVarsSent and ply.TTTVarsSent > (CurTime() - 3) then return end
-	ply.TTTVarsSent = CurTime()
-	ply:sendTTTVars()
+concommand.Add("_sendGStrikeVars", function(ply)
+	if not ply:CheckCooldown("GStrikeVars", 5) then return end
+	ply.GStrikeVars = ply.GStrikeVars or {}
+	ply.GStrikeVarsSent = CurTime()
+	ply:sendVars()
 end)

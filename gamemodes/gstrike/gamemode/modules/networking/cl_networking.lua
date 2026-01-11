@@ -1,36 +1,36 @@
-TTTVars = TTTVars or {}
+GStrikeVars = GStrikeVars or {}
 
 local pmeta = FindMetaTable("Player")
 local get_user_id = pmeta.UserID
-function pmeta:getTTTVar(var, default)
+function pmeta:getVar(var, default)
 	if not IsValid(self) then return nil end
-	local vars = TTTVars[get_user_id(self)]
+	local vars = GStrikeVars[get_user_id(self)]
 	return vars and vars[var] or default or nil
 end
 
 local function RetrievePlayerVar(userID, var, value)
 	local ply = Player(userID)
-	TTTVars[userID] = TTTVars[userID] or {}
+	GStrikeVars[userID] = GStrikeVars[userID] or {}
 
-	hook.Call("GStrike.VarChanged", nil, ply, var, TTTVars[userID][var], value)
-	TTTVars[userID][var] = value
+	hook.Call("GStrike.VarChanged", nil, ply, var, GStrikeVars[userID][var], value)
+	GStrikeVars[userID][var] = value
 
 	if IsValid(ply) then
-		ply.TTTVars = TTTVars[userID]
+		ply.GStrikeVars = GStrikeVars[userID]
 	end
 end
 
 local function doRetrieve()
 	local userID = net.ReadUInt(16)
-	local var, value = GStrike.readNetTTTVar()
+	local var, value = GStrike.readNetVar()
 	RetrievePlayerVar(userID, var, value)
 end
 net.Receive("GStrike.PlayerVar", doRetrieve)
 
 local function doRetrieveRemoval()
 	local userID = net.ReadUInt(16)
-	local vars = TTTVars[userID] or {}
-	local var = GStrike.readNetTTTVarRemoval()
+	local vars = GStrikeVars[userID] or {}
+	local var = GStrike.readNetVarRemoval()
 	local ply = Player(userID)
 
 	hook.Call("GStrike.VarChanged", nil, ply, var, vars[var], nil)
@@ -39,28 +39,28 @@ local function doRetrieveRemoval()
 end
 net.Receive("GStrike.PlayerVarRemoval", doRetrieveRemoval)
 
-local function InitializeTTTVars(len)
+local function InitializeVars(len)
 	local plyCount = net.ReadUInt(8)
 
 	for i = 1, plyCount, 1 do
 		local userID = net.ReadUInt(16)
-		local varCount = net.ReadUInt(GStrike_ID_BITS + 2)
+		local varCount = net.ReadUInt(GStrike.ID_BITS + 2)
 
 		for j = 1, varCount, 1 do
-			local var, value = GStrike.readNetTTTVar()
+			local var, value = GStrike.readNetVar()
 			RetrievePlayerVar(userID, var, value)
 		end
 	end
 end
-net.Receive("GStrike.InitializeVars", InitializeTTTVars)
-timer.Simple(0, function() RunConsoleCommand("_sendTTTVars") end)
+net.Receive("GStrike.InitializeVars", InitializeVars)
+timer.Simple(0, function() RunConsoleCommand("_sendVars") end)
 
 gameevent.Listen("player_disconnect")
 hook.Add("player_disconnect", "GStrike.VarDisconnect", function( data )
-	TTTVars[data.userid] = nil
+	GStrikeVars[data.userid] = nil
 end)
 
 timer.Create("GStrike.EnsureVars", 5, 0, function()
-	RunConsoleCommand("_sendTTTVars")
+	RunConsoleCommand("_sendVars")
 	timer.Remove("GStrike.EnsureVars")
 end)

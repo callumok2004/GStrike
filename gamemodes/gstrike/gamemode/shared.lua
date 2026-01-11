@@ -5,7 +5,15 @@ GM.Version = "0.0.1"
 GM.Customized = true
 GM.StartTime = SysTime()
 
+function SharedIncluded(f) AddCSLuaFile(f) include(f)end
+
+SharedIncluded("extensions/player.lua")
+
+
 GStrike = GStrike or {}
+
+GStrike.ModeCvar = CreateConVar("gstrike_mode", "deathmatch", {FCVAR_REPLICATED, FCVAR_NOTIFY, FCVAR_NOT_CONNECTED}, "Sets the active gamemode mode. (NOTE: This MUST be set in server.cfg or commandline, the gamemode CANNOT be changed mid-session)")
+GStrike.ActiveMode = GStrike.ModeCvar:GetString()
 
 LogSeverity = {
 	["Error"] = 1,
@@ -42,12 +50,12 @@ end
 GM:DoLog(string.format("%soading GStrike - v%s", (GAMEMODE or GM).Loaded and "Rel" or "L", GM.Version), LogSeverity.Info)
 
 TEAM_CT = 1
-TEAM_T = 2
+TEAM_TERR = 2
 TEAM_SPEC = TEAM_SPECTATOR
 
 function GM:CreateTeams()
    team.SetUp(TEAM_CT, "Counter Terrorists", Color(0, 200, 0, 255), false)// todo, get colors
-   team.SetUp(TEAM_T, "Terrorists", Color(200, 200, 0, 255), true) // todo, get colors
+   team.SetUp(TEAM_TERR, "Terrorists", Color(200, 200, 0, 255), true) // todo, get colors
    team.SetUp(TEAM_SPEC, "Spectators", Color(200, 200, 200, 255), true) // todo, get colors
 
    team.SetSpawnPoint(TEAM_CT, "info_player_terrorist")
@@ -55,7 +63,7 @@ function GM:CreateTeams()
 end
 
 function GM:PlayerFootstep(ply, pos, foot, sound, volume, rf)
-   if IsValid(ply) and (ply:Crouching() or ply:GetMaxSpeed() < 150 or ply:IsSpec()) then
+   if IsValid(ply) and (ply:Crouching() or ply:GetMaxSpeed() < 150) then
       return true
    end
 end

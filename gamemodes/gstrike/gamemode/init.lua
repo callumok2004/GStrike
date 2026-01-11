@@ -12,14 +12,14 @@ local files, folders = file.Find(fol .. "*", "LUA")
 
 for _, folder in SortedPairs(folders,true) do
 	local files = file.Find(fol .. folder .."/*.lua", "LUA")
-	for _,File in SortedPairs(files,true) do
+	for _, File in SortedPairs(files,true) do
 		if File:StartWith("sh_") then
 			AddCSLuaFile(fol..folder .. "/" ..File)
 			include(fol.. folder .. "/" ..File)
 		end
 	end
 
-	for _,File in SortedPairs(files,true) do
+	for _, File in SortedPairs(files,true) do
 		if File:StartWith("sv_") then
 			include(fol.. folder .. "/" ..File)
 		end
@@ -31,8 +31,8 @@ for _, folder in SortedPairs(folders,true) do
 end
 
 function GM:Initialize()
-   self:DoLog("Initializing GStrike...", LogSeverity.Debug)
-   RunConsoleCommand("mp_friendlyfire", "1")
+	self:DoLog("Initializing GStrike...", LogSeverity.Debug)
+	RunConsoleCommand("mp_friendlyfire", "1")
 end
 
 -- Make Ladders Great Again!
@@ -97,3 +97,10 @@ hook.Add("FinishMove", "GStrike.LadderFix", function(ply, mv)
 		ply.HasWalkMovedSinceLastJump = false
 	end
 end, HOOK_MONITOR_HIGH)
+
+-- 
+
+cvars.AddChangeCallback("gstrike_mode", function(cvar, old, new)
+	ErrorNoHalt("The active gamemode cannot be changed mid-session!")
+	GStrike.ModeCvar:SetString(old)
+end, "gstrike_mode")
